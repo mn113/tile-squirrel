@@ -1,3 +1,8 @@
+// Choose random element from array:
+Array.prototype.random = function() {
+    return this[Math.floor(Math.random() * this.length)];
+}
+
 // Create an instance of the engine.
 // If no dimensions are specified the game will be fullscreen.
 var game = new ex.Engine({
@@ -36,7 +41,7 @@ class Player extends ex.Actor {
             color: ex.Color.Chartreuse
         });
         // Make sure the player can partipate in collisions, by default excalibur actors do not collide
-        this.collisionType = ex.CollisionType.Active;
+        this.collisionType = ex.CollisionType.Passive;
         return this;
     }
 
@@ -45,13 +50,13 @@ class Player extends ex.Actor {
         if (engine.input.keyboard.isHeld(ex.Input.Keys.Left)) {
             player.x -= 5;
         }
-        if (engine.input.keyboard.isHeld(ex.Input.Keys.Right)) {
+        else if (engine.input.keyboard.isHeld(ex.Input.Keys.Right)) {
             player.x += 5;
         }
         if (engine.input.keyboard.isHeld(ex.Input.Keys.Up)) {
             player.y -= 5;
         }
-        if (engine.input.keyboard.isHeld(ex.Input.Keys.Down)) {
+        else if (engine.input.keyboard.isHeld(ex.Input.Keys.Down)) {
             player.y += 5;
         }
     }
@@ -63,10 +68,10 @@ var player = new Player();
 game.add(player);
 
 const sides = {
-    'N': {x:400, y: 20},
-    'S': {x:400, y: 580},
-    'E': {x:780, y: 300},
-    'W': {x:20, y: 300}
+    'N': {x: [350,400,450], y: [20]},
+    'S': {x: [350,400,450], y: [580]},
+    'E': {x: [780], y: [250,300,350]},
+    'W': {x: [20],  y: [250,300,350]}
 };
 
 const vectors = {
@@ -76,6 +81,8 @@ const vectors = {
     'W': {x:13, y:0}
 };
 
+const patterns = ['Rose', 'Violet', 'Black', 'Orange'];
+
 class Block extends ex.Actor {
     constructor(side, colour) {
         // Initialize an actor of the standard size:
@@ -84,7 +91,10 @@ class Block extends ex.Actor {
         this.id = blockId++;
         this.side = side;
         // Place actor at chosen spawn point:
-        this.spawn = sides[this.side];
+        this.spawn = {
+            x: sides[this.side].x.random(),
+            y: sides[this.side].y.random()
+        };
         this.x = this.spawn.x;
         this.y = this.spawn.y;
         console.log(this.id, this.side, this.spawn);
@@ -102,13 +112,19 @@ class Block extends ex.Actor {
     }
 }
 
-new Block('E', 'Rose');
-new Block('W', 'Violet');
-new Block('N', 'Black');
-new Block('S', 'Orange');
+// Keep spawning blocks:
+var blockSpawnLoop = setInterval(function() {
+    new Block(Object.keys(sides).random(), patterns.random());
+}, 1000);
 
 // spawn blocks randomly
-
+function spawnRandomBlock(side, amount = 1) {
+    var spawn = sides[side].random();
+    while (amount < 0) {
+        new Block(side);
+        amount--;
+    }
+}
 
 // Start the engine to begin the game.
 game.start();
