@@ -10,26 +10,21 @@ var game = new ex.Engine({
     height: 600
 });
 
-const blockSpawns = {
-    'N': {
-        x: [100,300,500],
-        y: 0
-    },
-    'S': {
-        x: [100,300,500],
-        y: 600
-    },
-    'E': {
-        x: 600,
-        y: [100,300,500]
-    },
-    'W': {
-        x: 0,
-        y: [100,300,500]
-    }
-};
+var map = new Extensions.Tiled.TiledResource("tiled/test2.json");
 
-var blockId = 1;
+// Create a loader and reference the map
+var loader = new ex.Loader([map]);
+
+// Temporary fixed block:
+var q = new ex.Actor({
+    x: game.drawWidth / 2,
+    y: game.drawHeight / 2,
+    width: 30, 
+    height: 30,
+    color: ex.Color.Green,
+    collisionType: ex.CollisionType.Fixed
+});
+game.add(q);
 
 class Player extends ex.Actor {
     constructor() {
@@ -38,15 +33,43 @@ class Player extends ex.Actor {
             y: game.drawHeight / 2,
             width: 20, 
             height: 20,
-            color: ex.Color.Chartreuse
+            color: ex.Color.Chartreuse,
+            collisionType: ex.CollisionType.Active
         });
-        // Make sure the player can partipate in collisions, by default excalibur actors do not collide
-        this.collisionType = ex.CollisionType.Passive;
+
+        // this.on('precollision', function(ev) {
+        //     console.info('player', ev.intersection);
+        // });
+    
         return this;
+    }
+
+    onInitialize(engine) {
+        // Apply image to player:
+        //this.texture = new ex.Texture('img/pinky.png');
+        //loader.addResource(this.texture);
+    }
+
+    onPrecollision(ev) {
+        console.info('player', ev.intersection);
+    }
+
+    // Draw is passed a rendering context and a delta in milliseconds since the last frame
+    draw(ctx, delta) {
+        //super.draw(ctx, delta); // perform base drawing logic
+
+        // Custom draw code
+        ctx.fillStyle = this.color.toString();
+        ctx.beginPath();
+        ctx.arc(this.pos.x, this.pos.y, 10, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.fill();
     }
 
     // Wire keyboard arrows to player movement:
     update(engine, delta) {
+        super.update(engine, delta); // call base update logic
+
         if (engine.input.keyboard.isHeld(ex.Input.Keys.Left)) {
             player.x -= 5;
         }
@@ -59,13 +82,14 @@ class Player extends ex.Actor {
         else if (engine.input.keyboard.isHeld(ex.Input.Keys.Down)) {
             player.y += 5;
         }
+
+        // P for pause/unpause:
+        if (engine.input.keyboard.isHeld(ex.Input.Keys.Space)) {
+            if (game.isPaused) game.start();
+            else game.stop();
+        }
     }
 }
-
-var player = new Player();
-
-// `game.add` is the same as calling `game.currentScene.add`
-game.add(player);
 
 const sides = {
     'N': {x: [350,400,450], y: [20]},
@@ -82,6 +106,8 @@ const vectors = {
 };
 
 const patterns = ['Rose', 'Violet', 'Black', 'Orange'];
+
+var blockId = 1;
 
 class Block extends ex.Actor {
     constructor(side, colour) {
@@ -102,6 +128,10 @@ class Block extends ex.Actor {
         this.color = ex.Color[colour];
         this.collisionType = ex.CollisionType.Active;
         this.vel.setTo(...Object.values(vectors[this.side]));
+
+        this.on('precollision', function (ev) {
+            console.log(this.id, ev.other);
+        });
         
         game.add(this);
         return this;
@@ -112,19 +142,27 @@ class Block extends ex.Actor {
     }
 }
 
+var player = new Player();
+//player.addDrawing(player.texture);
+game.add(player);
+
 // Keep spawning blocks:
 var blockSpawnLoop = setInterval(function() {
-    new Block(Object.keys(sides).random(), patterns.random());
+    if (game.scenes.root.actors.length < 25) {
+        new Block(Object.keys(sides).random(), patterns.random());
+    }
 }, 1000);
 
-// spawn blocks randomly
-function spawnRandomBlock(side, amount = 1) {
-    var spawn = sides[side].random();
-    while (amount < 0) {
-        new Block(side);
-        amount--;
-    }
-}
-
 // Start the engine to begin the game.
-game.start();
+game.start(loader).then(function() {
+    console.log("Game loaded");
+   
+    // Process the data in the map as you like
+    map.data.tilesets.forEach(function(ts) {
+        console.log(ts.image, ts.imageTexture.isLoaded());
+    });
+    // get an Excalibur `TileMap` instance
+    var tm = map.getTileMap();
+    // draw the tile map
+    game.add(tm);
+});
