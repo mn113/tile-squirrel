@@ -6,11 +6,11 @@ Array.prototype.random = function() {
 // Create an instance of the engine.
 // If no dimensions are specified the game will be fullscreen.
 var game = new ex.Engine({
-    width: 800,
+    width: 600,
     height: 600
 });
 
-var map = new Extensions.Tiled.TiledResource("tiled/test2.json");
+var map = new Extensions.Tiled.TiledResource("tiled/test3.json");
 
 // Create a loader and reference the map
 var loader = new ex.Loader([map]);
@@ -156,11 +156,11 @@ var player = new Player();
 game.add(player);
 
 // Keep spawning blocks:
-var blockSpawnLoop = setInterval(function() {
-    if (game.scenes.root.actors.length < 25) {
-        new Block(Object.keys(sides).random(), patterns.random());
-    }
-}, 1000);
+// var blockSpawnLoop = setInterval(function() {
+//     if (game.scenes.root.actors.length < 25) {
+//         new Block(Object.keys(sides).random(), patterns.random());
+//     }
+// }, 1000);
 
 // Start the engine to begin the game.
 game.start(loader).then(function() {
@@ -168,7 +168,7 @@ game.start(loader).then(function() {
    
     // Process the data in the map as you like
     map.data.tilesets.forEach(function(ts) {
-        console.log(ts.image, ts.imageTexture.isLoaded());
+        console.log(ts.image, ts.imageTexture.isLoaded());  //:FIXME:
     });
     // get an Excalibur `TileMap` instance
     var tm = map.getTileMap();
