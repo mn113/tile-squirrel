@@ -37,21 +37,18 @@ class Player extends ex.Actor {
             collisionType: ex.CollisionType.Active
         });
 
-        // this.on('precollision', function(ev) {
-        //     console.info('player', ev.intersection);
-        // });
-    
         return this;
     }
 
     onInitialize(engine) {
         // Apply image to player:
-        //this.texture = new ex.Texture('img/pinky.png');
-        //loader.addResource(this.texture);
-    }
+        this.texture = new ex.Texture('img/pinky.png');
+        loader.addResource(this.texture);
+        this.addDrawing(this.texture);
 
-    onPrecollision(ev) {
-        console.info('player', ev.intersection);
+        this.on('precollision', function(ev) {
+            console.info('player', ev.other.id, ev.intersection);
+        });
     }
 
     // Draw is passed a rendering context and a delta in milliseconds since the last frame
@@ -99,10 +96,10 @@ const sides = {
 };
 
 const vectors = {
-    'N': {x:0, y:10},
-    'S': {x:0, y:-10},
-    'E': {x:-13, y:0},
-    'W': {x:13, y:0}
+    'N': {x:0, y:12},
+    'S': {x:0, y:-12},
+    'E': {x:-16, y:0},
+    'W': {x:16, y:0}
 };
 
 const patterns = ['Rose', 'Violet', 'Black', 'Orange'];
@@ -126,24 +123,36 @@ class Block extends ex.Actor {
         console.log(this.id, this.side, this.spawn);
         // Actor props:
         this.color = ex.Color[colour];
-        this.collisionType = ex.CollisionType.Active;
-        this.vel.setTo(...Object.values(vectors[this.side]));
+        this.collisionType = ex.CollisionType.Passive;
 
-        this.on('precollision', function (ev) {
-            console.log(this.id, ev.other);
-        });
-        
         game.add(this);
         return this;
     }
 
-    report() {
-        console.log('Moving block', this.id);
+    onInitialize(engine) {
+        this.vel.setTo(...Object.values(vectors[this.side]));
+
+        this.on('preCollision', function(ev) { // FIXME:
+            if (ev.other === player) {
+                console.log(this.id, ev.other, ev.intersection);
+                // Only affect blocks perpendicular to their movement:
+                if (this.side == 'N' || this.side == 'S') {
+                    if (this.vel.x * ev.intersection.x < 0) this.vel.x = 0;    // stop it dead
+                    else this.vel.x = ev.intersection.x * 5;    // set constant speed
+                }
+                else {
+                    if (this.vel.y * ev.intersection.y < 0) this.vel.y = 0;    // stop it dead
+                    else this.vel.y = ev.intersection.y * 5;    // set constant speed
+                }
+            }
+            else {
+                //console.log(this.id, ev.other.id);
+            }
+        });
     }
 }
 
 var player = new Player();
-//player.addDrawing(player.texture);
 game.add(player);
 
 // Keep spawning blocks:
